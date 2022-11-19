@@ -1,0 +1,182 @@
+\documentclass{beamer}
+\usepackage[ddmmyyyy]{datetime}
+\renewcommand{\dateseparator}{.}
+%\usetheme{Boadilla}
+% \usetheme{Frankfurt} % like HTWK
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+
+\title{Google Pixel Lockscreen Bypass}
+\subtitle{Race conditions gone wild}
+\author{Oliver Herrmann}
+\institute{HTWK Leipzig}
+\date{\today}
+
+\AtBeginSection[]{
+  \begin{frame}
+  \vfill
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}\insertsectionhead\par%
+  \end{beamercolorbox}
+  \vfill
+  \end{frame}
+}
+
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{enumerate items}[square]
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda}
+\tableofcontents
+\end{frame}
+
+\section{Übersicht}
+
+\begin{frame}
+\frametitle{\href{https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-20465}{CVE-2022-20465}}
+\begin{itemize}
+    \begin{block}{Beschreibung}
+        ``Possible lockscreen bypass due to a logic error in the code''
+    \end{block}
+    \item Gemeldet: 13.06.2022
+    \item Behoben: 05.11.2022
+    \item Schere: hoch
+    \item Typ: Elevatin of privileges
+    \item Betroffen
+    \begin{itemize}
+        \item Geräte: Google Pixel
+        \item Systeme: Android 10 - Android 13
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Schwachstelle}
+\begin{enumerate}
+    \item Eingeschaltetes, \textbf{gesperrtes}, Google Pixel Smartphone
+    \item Entfernen der SIM-Karte
+    \item Einsetzen einer SIM-Karte
+    \item Dreimaliges eingeben einer falschen SIM-Karten-PIN
+    \item Eingeben der SIM-Karten-PUK
+    \item Das Smartphone ist \textbf{entsperrt}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}
+\frametitle{Ursache}
+\begin{itemize}
+    \item Race-condition beim Freigeben von ``Security-Screens''
+    \begin{itemize}
+        \item Security-Screens liegen als Stack vor
+        \item Freigeben entfernt den ``aktiven'' Security-Screen
+    \end{itemize}
+    \item SIM-Monitor Prozess setzt Standard-Security-Screen aktiv bei Änderung des SIM-Zustands
+    \item PUK-Security-Screen gibt fälschlicher Weise den aktiven Security-Screen (nicht sich selbst) frei
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Fehlerbehebung}
+\begin{block}{Fehlerbehebung}
+    Beim Freigeben von Security-Screens muss angegeben werden welche Art
+    von Security-Screen freigegeben werden soll.
+    
+    \hfill \href{https://github.com/aosp-mirror/platform_frameworks_base/commit/ecbed81c3a331f2f0458923cc7e744c85ece96da}{Commit}
+\end{block}
+\end{frame}
+
+% \begin{frame}
+% \frametitle{Ähnliche Fälle}
+% \end{frame}
+
+\section{Bedrohungsanalyse (STRIDE)}
+
+\begin{frame}
+\frametitle{Spoofing}
+\begin{itemize}
+    \item Die Sicherheitslücke ist nicht von Spoofing im klassischen Sinne betroffen
+    \item Bei Ausnutzung der Lücke kann eine fremde Identität ggü. einer dritten Partei vorgegeben werden
+    \item Hierfür ist aber \textbf{kein Verändern von Daten} (in einem Netzwerk) nötig
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Tampering}
+\begin{itemize}
+    \item Die Sicherheitslücke ist von Tampering betroffen
+    \item Bei Ausnutzung der Lücke kann der Zustand / die Daten des betroffenen
+    Geräts ohne Kenntnis der Inhabers verändert werden
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Repudiation}
+\begin{itemize}
+    \item Die Sicherheitslücke ist von Repudiation betroffen
+    \item Bei Ausnutzung der Lücke können mit dem betroffenen Gerät Prozesse
+    ausgeführt werden, die der Geräteinhaber nachträglich nicht zweifelsfrei
+    abstreiten kann
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Information Disclosure}
+\begin{itemize}
+    \item Die Sicherheitslücke ist von Information Disclosure betroffen
+    \item Bei Ausnutzung der Lücke können Informationen, die auf dem Gerät
+    prinzipiell geschützt vorliegen, eingesehen werden
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Denial of Service}
+\begin{itemize}
+    \item Die Sicherheitslücke ist nicht direkt von Denial of Service betroffen
+    \item Bei Ausnutzung der Lücke ist denkbar, dass der Angreifer das Gerät so
+    manipuliert, dass es nicht mehr nutzbar ist
+    \item Hierfür sind aber ggf. weitere Sicherheitslücken notwendig
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Elevation of Privilege}
+\begin{itemize}
+    \item Die Sicherheitslücke ist von Elevation of Privilege betroffen
+    \item Bei Ausnutzung der Lücke kann ein Angreifer das Gerät prinzipiell mit
+    den Rechten des Gerätebesitzers bedienen
+\end{itemize}
+\end{frame}
+
+\section{Fazit}
+
+\begin{frame}
+\frametitle{Fazit}
+\begin{itemize}
+    \item Die Sicherheitslücke gehört in die Kategorie ``worst case'' 
+    \begin{itemize}
+        \item Bei Ausnutzung sind viele Arten von Schäden möglich
+        \item Die Lücke kann ohne besondere technische Erfordernisse / Know-how ausgenutzt werden
+        \item Das Ausnutzen der Lücke erfordert wenig Zeit / Ressourcen
+    \end{itemize}
+    \item Es ist physischer Zugriff aus das Gerät notwendig
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Quellen}
+\begin{itemize}
+    \fontsize{8pt}{8pt}\selectfont
+    \item Blog: \url{https://bugs.xdavidhu.me/google/2022/11/10/accidental-70k-google-pixel-lock-screen-bypass/}
+    \item CVE: \url{https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-20465}
+    \item Android Security Bulletin: \url{https://source.android.com/docs/security/bulletin/2022-11-01}
+\end{itemize}
+\end{frame}
+
+\end{document}
